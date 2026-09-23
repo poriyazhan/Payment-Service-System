@@ -1,5 +1,7 @@
 package com.payment.payment_service.entity;
 
+import com.payment.payment_service.enums.PaymentMethod;
+import com.payment.payment_service.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -27,11 +29,13 @@ public class Payment {
     @Column(nullable = false, length = 3)
     private String currency;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "payment_method", nullable = false)
-    private String paymentMethod;
+    private PaymentMethod paymentMethod;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private PaymentStatus status;
 
     @Column(length = 255)
     private String description;
@@ -42,5 +46,4 @@ public class Payment {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // getters and setters
 }
