@@ -1,6 +1,9 @@
 package com.payment.payment_service.service.impl;
 
+import com.payment.payment_service.entity.PaymentTransaction;
+import com.payment.payment_service.enums.TransactionType;
 import com.payment.payment_service.exception.InvalidPaymentStateException;
+import com.payment.payment_service.repository.PaymentTransactionRepository;
 import com.payment.payment_service.service.PaymentService;
 
 import com.payment.payment_service.dto.payment.CreatePaymentRequest;
@@ -20,9 +23,11 @@ import java.util.UUID;
 public class PaymentServiceImpl implements PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
 
-    public PaymentServiceImpl(PaymentRepository paymentRepository) {
+    public PaymentServiceImpl(PaymentRepository paymentRepository, PaymentTransactionRepository paymentTransactionRepository) {
         this.paymentRepository = paymentRepository;
+        this.paymentTransactionRepository = paymentTransactionRepository;
     }
 
     @Override
@@ -59,7 +64,8 @@ public class PaymentServiceImpl implements PaymentService {
                     .findByPaymentReference(paymentReference)
                     .orElseThrow(() ->
                             new EntityNotFoundException(
-                                    "Payment not found: " + paymentReference
+                                    "Payment not found: "
+                                            + paymentReference
                             ));
 
             PaymentStatus currentStatus = payment.getStatus();
@@ -79,9 +85,28 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setStatus(newStatus);
             payment.setUpdatedAt(LocalDateTime.now());
 
-            Payment updatedPayment = paymentRepository.save(payment);
+            paymentRepository.save(payment);
 
-            return mapToResponse(updatedPayment);
+            PaymentTransaction transaction =
+                    new PaymentTransaction();
+
+            transaction.setTransactionReference(
+                    generateTransactionReference()
+            );
+
+            transaction.setPayment(payment);
+
+            transaction.setTransactionType(
+                    TransactionType.PAYMENT
+            );
+
+            transaction.setStatus(newStatus);
+
+            transaction.setCreatedAt(LocalDateTime.now());
+
+            paymentTransactionRepository.save(transaction);
+
+            return mapToResponse(payment);
 
     }
 
@@ -110,4 +135,12 @@ public class PaymentServiceImpl implements PaymentService {
         return response;
     }
 
+    private String generateTransactionReference() {
+
+        return "TXN-" +
+                UUID.randomUUID()
+                        .toString()
+                        .substring(0, 8)
+                        .toUpperCase();
+    }
 }
