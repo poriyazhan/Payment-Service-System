@@ -1,5 +1,6 @@
 package com.payment.payment_service.service.impl;
 
+import com.payment.payment_service.exception.InvalidPaymentStateException;
 import com.payment.payment_service.service.PaymentService;
 
 import com.payment.payment_service.dto.payment.CreatePaymentRequest;
@@ -7,6 +8,8 @@ import com.payment.payment_service.dto.payment.PaymentResponse;
 import com.payment.payment_service.entity.Payment;
 import com.payment.payment_service.enums.PaymentStatus;
 import com.payment.payment_service.repository.PaymentRepository;
+import com.payment.payment_service.service.PaymentStateMachine;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +49,42 @@ public class PaymentServiceImpl implements PaymentService {
         return mapToResponse(savedPayment);
     }
 
+    @Override
+    @Transactional
+    public PaymentResponse updatePaymentStatus(String paymentReference,PaymentStatus newStatus) {
+
+
+
+            Payment payment = paymentRepository
+                    .findByPaymentReference(paymentReference)
+                    .orElseThrow(() ->
+                            new EntityNotFoundException(
+                                    "Payment not found: " + paymentReference
+                            ));
+
+            PaymentStatus currentStatus = payment.getStatus();
+
+            if (!PaymentStateMachine.isValidTransition(
+                    currentStatus,
+                    newStatus)) {
+
+                throw new InvalidPaymentStateException(
+                        "Invalid payment status transition: "
+                                + currentStatus
+                                + " -> "
+                                + newStatus
+                );
+            }
+
+            payment.setStatus(newStatus);
+            payment.setUpdatedAt(LocalDateTime.now());
+
+            Payment updatedPayment = paymentRepository.save(payment);
+
+            return mapToResponse(updatedPayment);
+
+    }
+
     private String generatePaymentReference() {
 
         return "PAY-" +
@@ -70,4 +109,5 @@ public class PaymentServiceImpl implements PaymentService {
 
         return response;
     }
+
 }

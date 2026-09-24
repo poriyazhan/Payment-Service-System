@@ -2,7 +2,8 @@ package com.payment.payment_service.controller;
 
 import com.payment.payment_service.dto.payment.CreatePaymentRequest;
 import com.payment.payment_service.dto.payment.PaymentResponse;
-import com.payment.payment_service.service.PaymentService;
+import com.payment.payment_service.enums.PaymentStatus;
+import com.payment.payment_service         .service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,5 +29,19 @@ public class PaymentController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    @PatchMapping("/{paymentReference}/status")
+    public ResponseEntity<PaymentResponse> updatePaymentStatus(
+            @PathVariable String paymentReference,
+            @RequestParam PaymentStatus status) {
+
+        PaymentResponse response =
+                paymentService.updatePaymentStatus(
+                        paymentReference,
+                        status
+                );
+
+        return ResponseEntity.ok(response);
     }
 }
